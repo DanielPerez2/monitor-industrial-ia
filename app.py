@@ -1,7 +1,17 @@
 
 import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+import requests
+import matplotlib.pyplot as plt
+import os
 
-# --- SISTEMA DE LOGIN BÁSICO ---
+# ✅ CONFIGURACIÓN DE PÁGINA
+st.set_page_config(page_title="Monitor Industrial IA", layout="wide")
+
+
+# --- LOGIN BÁSICO ---
 if 'login_exitoso' not in st.session_state:
     st.session_state.login_exitoso = False
 
@@ -87,6 +97,7 @@ def guardar_dato(df, nuevo):
 st.title("🧠 Monitor Industrial con IA")
 st.markdown("Visualización de sensores simulados y detección automática de anomalías con alertas por Telegram.")
 dato = leer_datos()
+
 # ESTADO GENERAL DEL SISTEMA
 if ia_disponible:
     entrada = [[dato['temperatura'], dato['vibracion']]]
