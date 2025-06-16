@@ -18,8 +18,7 @@ UMBRAL_VIBRACION = 1
 BOT_TOKEN = '7590291986:AAGhvZDHNS7FmwQHLVyX--Z6oknDXLew7-o'
 CHAT_ID = '5870809543'
 
-def if alertas_activadas:
-        enviar_alerta_telegram(mensaje):
+def enviar_alerta_telegram(mensaje):
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
     data = {'chat_id': CHAT_ID, 'text': mensaje}
     try:
@@ -106,6 +105,12 @@ if ia_disponible:
             f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
         )
         if alertas_activadas:
+            enviar_alerta_telegram(mensaje)
+            f"⚠️ *Anomalía detectada por IA*\n"
+            f"🕒 Hora: {dato['hora']}\n"
+            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\n"
+            f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
+        )
         enviar_alerta_telegram(mensaje)
     else:
         st.success("✅ Todo normal según la IA")
