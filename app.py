@@ -73,6 +73,20 @@ st.sidebar.markdown("Versión demo por Daniel Pérez")
 
 st.title("🧠 Monitor Industrial con IA")
 st.markdown("Visualización de sensores simulados y detección automática de anomalías con alertas por Telegram.")
+dato = leer_datos()
+# ESTADO GENERAL DEL SISTEMA
+if ia_disponible:
+    entrada = [[dato['temperatura'], dato['vibracion']]]
+    pred = modelo.predict(entrada)
+    if pred[0] == -1:
+        st.markdown("### 🚨 Estado del sistema: **ANOMALÍA DETECTADA**")
+        st.error("El sistema ha detectado una anomalía en los sensores.")
+    else:
+        st.markdown("### ✅ Estado del sistema: **Normal**")
+        st.success("Todo funciona dentro de los parámetros esperados.")
+else:
+    st.info("ℹ️ No se pudo cargar el modelo de IA.")
+st.divider()
 
 # LEER NUEVO DATO
 dato = leer_datos()
@@ -89,7 +103,6 @@ with col2:
     if dato['vibracion']:
         st.warning("⚠️ Vibración fuera de rango")
 
-# PREDICCIÓN IA + ALERTA
 # PREDICCIÓN IA + ALERTA
 st.subheader("🔍 Evaluación del sistema IA")
 
@@ -114,9 +127,10 @@ else:
 
 # GRÁFICO DE TEMPERATURA
 st.subheader("📈 Historial de temperatura")
-fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(historial['hora'], historial['temperatura'], marker='o')
-ax.axhline(UMBRAL_TEMPERATURA, color='red', linestyle='--', label='Umbral')
+fig, ax = plt.subplots(figsize=(10, 4), facecolor='white')
+ax.plot(historial['hora'], historial['temperatura'], marker='o', linewidth=2, markersize=6, color='tab:blue')
+ax.axhline(UMBRAL_TEMPERATURA, color='red', linestyle='--', label='Umbral crítico')
+
 ax.set_xticks(range(len(historial)))
 ax.set_xticklabels(historial['hora'], rotation=45)
 ax.set_ylabel("Temperatura (ºC)")
