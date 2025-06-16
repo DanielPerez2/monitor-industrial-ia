@@ -51,6 +51,11 @@ creds = ServiceAccountCredentials.from_json_keyfile_name("apt-tracker-463114-h7-
 client = gspread.authorize(creds)
 sheet = client.open("monitor_ia_datos").sheet1
 
+# --- REVISAR ENCABEZADOS ---
+encabezado = sheet.row_values(1)
+if encabezado != ["hora", "temperatura", "vibracion"]:
+    sheet.update("A1:C1", [["hora", "temperatura", "vibracion"]])
+
 # --- CARGAR MODELO IA ---
 try:
     modelo = joblib.load("modelo_ia.joblib")
@@ -72,7 +77,9 @@ st.markdown("Sistema de monitoreo con IA, Google Sheets y alertas automáticas."
 # --- LEER DATO ACTUAL Y GUARDAR EN SHEETS ---
 dato = leer_datos()
 try:
+    index = len(sheet.get_all_values()) + 1
     sheet.append_row([dato["hora"], dato["temperatura"], str(dato["vibracion"])], value_input_option='USER_ENTERED')
+    st.success(f"📤 Dato guardado en la fila {index} de Google Sheets")
 except Exception as e:
     st.error("❌ Error al guardar en Google Sheets:")
     st.code(str(e), language="python")
