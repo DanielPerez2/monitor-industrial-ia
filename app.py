@@ -63,6 +63,7 @@ st.markdown("Visualización de sensores simulados y detección automática de an
 
 # --- LEER DATO ACTUAL ---
 dato = leer_datos()
+st.write("🧪 Dato simulado:", dato)
 
 # --- ESTADO GENERAL ---
 if ia_disponible:
@@ -80,10 +81,11 @@ st.divider()
 
 # --- GUARDAR EN HISTORIAL ---
 historial_path = "historial_datos.csv"
-if os.path.exists(historial_path):
-    historial = pd.read_csv(historial_path)
-else:
+try:
+    historial = pd.read_csv("historial_datos.csv")
+except:
     historial = pd.DataFrame(columns=["hora", "temperatura", "vibracion"])
+
 
 nuevo = pd.DataFrame([dato])
 historial = pd.concat([historial, nuevo], ignore_index=True)
