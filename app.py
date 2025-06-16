@@ -8,8 +8,11 @@ st.title("🛠 Debug Final - Google Sheets")
 
 try:
     st.subheader("1️⃣ Cargando credenciales...")
+    import json
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("apt-tracker-463114-h7-83eb18660572.json", scope)
+    cred_dict = json.loads(st.secrets["GOOGLE_SHEETS_CREDENTIALS"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, scope)
+
     st.success("✅ Credenciales cargadas correctamente")
 
     st.subheader("2️⃣ Autenticando cliente...")
