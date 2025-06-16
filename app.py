@@ -1,5 +1,5 @@
 
-# ✅ CONFIGURACIÓN DE PÁGINA DEBE SER PRIMERA LÍNEA
+# ✅ CONFIGURACIÓN INICIAL
 import streamlit as st
 st.set_page_config(page_title="Monitor Industrial IA", layout="wide")
 
@@ -9,7 +9,9 @@ import numpy as np
 import joblib
 import requests
 import matplotlib.pyplot as plt
-import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
 # --- LOGIN BÁSICO ---
 if 'login_exitoso' not in st.session_state:
@@ -26,12 +28,12 @@ if not st.session_state.login_exitoso:
             st.error("❌ Usuario o contraseña incorrectos.")
     st.stop()
 
-# --- FUNCIONES ---
+# --- FUNCIONES AUXILIARES ---
 def leer_datos():
     temperatura = np.random.normal(loc=50, scale=10)
     vibracion = np.random.rand() > 0.8
-    hora = pd.Timestamp.now().strftime("%H:%M:%S")
-    return {"temperatura": temperatura, "vibracion": vibracion, "hora": hora}
+    hora = datetime.now().strftime("%H:%M:%S")
+    return {"hora": hora, "temperatura": temperatura, "vibracion": vibracion}
 
 def enviar_alerta_telegram(mensaje):
     token = "7590291986:AAGhvZDHNS7FmwQHLVyX--Z6oknDXLew7-o"
@@ -43,6 +45,12 @@ def enviar_alerta_telegram(mensaje):
     except:
         pass
 
+# --- CONECTAR CON GOOGLE SHEETS ---
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("apt-tracker-463114-h7-83eb18660572.json", scope)
+client = gspread.authorize(creds)
+sheet = client.open("monitor_ia_datos").sheet1
+
 # --- CARGAR MODELO IA ---
 try:
     modelo = joblib.load("modelo_ia.joblib")
@@ -50,64 +58,33 @@ try:
 except:
     ia_disponible = False
 
-# --- PANEL DE CONFIGURACIÓN ---
+# --- PANEL LATERAL ---
 st.sidebar.title("⚙️ Configuración del sistema")
-UMBRAL_TEMPERATURA = st.sidebar.slider("Umbral de temperatura (°C)", min_value=30, max_value=90, value=50)
+UMBRAL_TEMPERATURA = st.sidebar.slider("Umbral de temperatura (°C)", 30, 90, 50)
 alertas_activadas = st.sidebar.toggle("🔔 Activar alertas por Telegram", value=True)
 st.sidebar.markdown("---")
-st.sidebar.markdown("Versión demo por Daniel Pérez")
+st.sidebar.markdown("Versión conectada a Google Sheets ✅")
 
-# --- INICIO APP ---
+# --- TÍTULO PRINCIPAL ---
 st.title("Monitor Industrial IA")
-st.markdown("Visualización de sensores simulados y detección automática de anomalías con alertas por Telegram.")
+st.markdown("Sistema de monitoreo con IA, Google Sheets y alertas automáticas.")
 
-# --- LEER DATO ACTUAL ---
+# --- LEER DATO ACTUAL Y GUARDAR EN SHEETS ---
 dato = leer_datos()
-st.write("🧪 Dato simulado:", dato)
+sheet.append_row([dato["hora"], dato["temperatura"], str(dato["vibracion"])])
 
-# --- ESTADO GENERAL ---
+# --- CARGAR HISTORIAL DESDE SHEETS ---
+datos = sheet.get_all_records()
+historial = pd.DataFrame(datos)
+
+# --- MOSTRAR ESTADO DEL SISTEMA ---
+st.subheader("🔍 Evaluación del sistema IA")
 if ia_disponible:
-    entrada = [[dato['temperatura'], dato['vibracion']]]
+    entrada = [[dato['temperatura'], dato['vibracion'] == "True"]]
     pred = modelo.predict(entrada)
     if pred[0] == -1:
         st.markdown("### 🚨 Estado del sistema: **ANOMALÍA DETECTADA**")
-        st.error("El sistema ha detectado una anomalía en los sensores.")
-    else:
-        st.markdown("### ✅ Estado del sistema: **Normal**")
-        st.success("Todo funciona dentro de los parámetros esperados.")
-else:
-    st.info("ℹ️ No se pudo cargar el modelo de IA.")
-st.divider()
-
-# --- GUARDAR EN HISTORIAL ---
-historial_path = "historial_datos.csv"
-try:
-    historial = pd.read_csv("historial_datos.csv")
-except:
-    historial = pd.DataFrame(columns=["hora", "temperatura", "vibracion"])
-
-
-nuevo = pd.DataFrame([dato])
-historial = pd.concat([historial, nuevo], ignore_index=True)
-historial.to_csv(historial_path, index=False)
-
-# --- MOSTRAR GRÁFICO ---
-modo_oscuro = st.get_option("theme.base") == "dark"
-plt.style.use("dark_background" if modo_oscuro else "default")
-
-st.subheader("📊 Temperatura registrada")
-fig, ax = plt.subplots(figsize=(10, 4), facecolor='white')
-ax.plot(historial['hora'], historial['temperatura'], marker='o', linewidth=2, markersize=6, color='tab:blue')
-ax.axhline(UMBRAL_TEMPERATURA, color='red', linestyle='--', label='Umbral crítico')
-ax.set_xlabel("Hora")
-ax.set_ylabel("Temperatura (°C)")
-ax.legend()
-st.pyplot(fig)
-
-# --- IA + ALERTAS ---
-st.subheader("🔍 Evaluación del sistema IA")
-if ia_disponible:
-    if pred[0] == -1:
+        st.error("El sistema ha detectado una anomalía.")
         mensaje = (
             f"⚠️ *Anomalía detectada por IA*\n"
             f"🕒 Hora: {dato['hora']}\n"
@@ -116,34 +93,42 @@ if ia_disponible:
         )
         if alertas_activadas:
             enviar_alerta_telegram(mensaje)
-        st.error("🚨 ANOMALÍA DETECTADA")
     else:
-        st.success("✅ Todo normal según la IA")
+        st.markdown("### ✅ Estado del sistema: **Normal**")
+        st.success("Todo funciona dentro de los parámetros esperados.")
 else:
     st.info("ℹ️ No se pudo cargar el modelo de IA.")
+st.divider()
 
+# --- MOSTRAR GRÁFICO ---
+modo_oscuro = st.get_option("theme.base") == "dark"
+plt.style.use("dark_background" if modo_oscuro else "default")
+
+st.subheader("📊 Temperatura registrada")
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(historial['hora'], historial['temperatura'], marker='o', linewidth=2, color='tab:blue')
+ax.axhline(UMBRAL_TEMPERATURA, color='red', linestyle='--', label='Umbral crítico')
+ax.set_xlabel("Hora")
+ax.set_ylabel("Temperatura (°C)")
+ax.legend()
+st.pyplot(fig)
 
 # --- HISTORIAL FILTRABLE ---
 st.subheader("📂 Historial de registros")
 
-# Convertir 'hora' a datetime si es necesario
 try:
     historial['hora_dt'] = pd.to_datetime(historial['hora'], format="%H:%M:%S").dt.time
 except:
     historial['hora_dt'] = historial['hora']
 
-# Selección de intervalo de tiempo
 hora_inicio = st.time_input("Hora inicio", value=pd.to_datetime("00:00:00").time())
 hora_fin = st.time_input("Hora fin", value=pd.to_datetime("23:59:59").time())
 
-# Filtrar por hora
 historial_filtrado = historial[
     historial['hora_dt'].apply(lambda h: hora_inicio <= h <= hora_fin)
 ]
 
-# Mostrar tabla
 st.dataframe(historial_filtrado[['hora', 'temperatura', 'vibracion']], use_container_width=True)
 
-# Botón para descargar CSV filtrado
 csv = historial_filtrado[['hora', 'temperatura', 'vibracion']].to_csv(index=False).encode("utf-8")
 st.download_button("📥 Descargar historial filtrado (.csv)", data=csv, file_name="historial_filtrado.csv", mime="text/csv")
