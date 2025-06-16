@@ -12,10 +12,10 @@ if not st.session_state.login_exitoso:
     if st.button("Iniciar sesión"):
         if user == "daniel" and password == "demo123":
             st.session_state.login_exitoso = True
-            st.experimental_rerun()
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
-    st.stop()
+    if not st.session_state.login_exitoso:
+        st.stop()
 
 
 
@@ -86,7 +86,7 @@ def guardar_dato(df, nuevo):
 # CABECERA
 st.title("🧠 Monitor Industrial con IA")
 st.markdown("Visualización de sensores simulados y detección automática de anomalías con alertas por Telegram.")
-
+dato = leer_datos()
 # ESTADO GENERAL DEL SISTEMA
 if ia_disponible:
     entrada = [[dato['temperatura'], dato['vibracion']]]
