@@ -1,5 +1,25 @@
 
 import streamlit as st
+
+# --- SISTEMA DE LOGIN BÁSICO ---
+if 'login_exitoso' not in st.session_state:
+    st.session_state.login_exitoso = False
+
+if not st.session_state.login_exitoso:
+    st.title("🔐 Acceso al sistema")
+    user = st.text_input("Usuario")
+    password = st.text_input("Contraseña", type="password")
+    if st.button("Iniciar sesión"):
+        if user == "daniel" and password == "demo123":
+            st.session_state.login_exitoso = True
+            st.experimental_rerun()
+        else:
+            st.error("❌ Usuario o contraseña incorrectos.")
+    st.stop()
+
+
+
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -8,8 +28,6 @@ import joblib
 import requests
 import base64
 import io
-# Detectar si el tema es oscuro
-modo_oscuro = st.get_option("theme.base") == "dark"
 
 # CONFIGURACIÓN GENERAL
 st.set_page_config(page_title="Monitor Industrial IA", layout="wide")
@@ -65,17 +83,10 @@ def guardar_dato(df, nuevo):
     df.to_csv('historial_datos.csv', index=False)
     return df
 
-
-# PANEL DE CONFIGURACIÓN
-st.sidebar.title("⚙️ Configuración del sistema")
-UMBRAL_TEMPERATURA = st.sidebar.slider("Umbral de temperatura (°C)", min_value=30, max_value=90, value=50)
-alertas_activadas = st.sidebar.toggle("🔔 Activar alertas por Telegram", value=True)
-st.sidebar.markdown("---")
-st.sidebar.markdown("Versión demo por Daniel Pérez")
-
+# CABECERA
 st.title("🧠 Monitor Industrial con IA")
 st.markdown("Visualización de sensores simulados y detección automática de anomalías con alertas por Telegram.")
-dato = leer_datos()
+
 # ESTADO GENERAL DEL SISTEMA
 if ia_disponible:
     entrada = [[dato['temperatura'], dato['vibracion']]]
@@ -89,6 +100,7 @@ if ia_disponible:
 else:
     st.info("ℹ️ No se pudo cargar el modelo de IA.")
 st.divider()
+
 
 # LEER NUEVO DATO
 dato = leer_datos()
@@ -115,13 +127,12 @@ if ia_disponible:
     if pred[0] == -1:
         st.error("🚨 ANOMALÍA DETECTADA")
         mensaje = (
-            f"⚠️ *Anomalía detectada por IA*\\n"
-            f"🕒 Hora: {dato['hora']}\\n"
-            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\\n"
+            f"⚠️ *Anomalía detectada por IA*\n"
+            f"🕒 Hora: {dato['hora']}\n"
+            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\n"
             f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
         )
-        if alertas_activadas:
-            enviar_alerta_telegram(mensaje)
+        enviar_alerta_telegram(mensaje)
     else:
         st.success("✅ Todo normal según la IA")
 else:
@@ -129,14 +140,9 @@ else:
 
 # GRÁFICO DE TEMPERATURA
 st.subheader("📈 Historial de temperatura")
-if modo_oscuro:
-    plt.style.use("dark_background")
-else:
-    plt.style.use("default")
 fig, ax = plt.subplots(figsize=(10, 4), facecolor='white')
 ax.plot(historial['hora'], historial['temperatura'], marker='o', linewidth=2, markersize=6, color='tab:blue')
 ax.axhline(UMBRAL_TEMPERATURA, color='red', linestyle='--', label='Umbral crítico')
-
 ax.set_xticks(range(len(historial)))
 ax.set_xticklabels(historial['hora'], rotation=45)
 ax.set_ylabel("Temperatura (ºC)")
