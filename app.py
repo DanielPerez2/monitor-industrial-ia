@@ -18,7 +18,7 @@ UMBRAL_VIBRACION = 1
 BOT_TOKEN = '7590291986:AAGhvZDHNS7FmwQHLVyX--Z6oknDXLew7-o'
 CHAT_ID = '5870809543'
 
-def enviar_alerta_telegram(mensaje):
+def enviar_alerta_telegram(mensaje) if alertas_activadas else None:
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
     data = {'chat_id': CHAT_ID, 'text': mensaje}
     try:
@@ -63,7 +63,14 @@ def guardar_dato(df, nuevo):
     df.to_csv('historial_datos.csv', index=False)
     return df
 
-# CABECERA
+
+# PANEL DE CONFIGURACIÓN
+st.sidebar.title("⚙️ Configuración del sistema")
+UMBRAL_TEMPERATURA = st.sidebar.slider("Umbral de temperatura (°C)", min_value=30, max_value=90, value=50)
+alertas_activadas = st.sidebar.toggle("🔔 Activar alertas por Telegram", value=True)
+st.sidebar.markdown("---")
+st.sidebar.markdown("Versión demo por Daniel Pérez")
+
 st.title("🧠 Monitor Industrial con IA")
 st.markdown("Visualización de sensores simulados y detección automática de anomalías con alertas por Telegram.")
 
@@ -97,7 +104,7 @@ if ia_disponible:
             f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\n"
             f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
         )
-        enviar_alerta_telegram(mensaje)
+        enviar_alerta_telegram(mensaje) if alertas_activadas else None
     else:
         st.success("✅ Todo normal según la IA")
 else:
