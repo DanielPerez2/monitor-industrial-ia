@@ -119,3 +119,29 @@ if ia_disponible:
         st.success("✅ Todo normal según la IA")
 else:
     st.info("ℹ️ No se pudo cargar el modelo de IA.")
+
+
+# --- HISTORIAL FILTRABLE ---
+st.subheader("📂 Historial de registros")
+
+# Convertir 'hora' a datetime si es necesario
+try:
+    historial['hora_dt'] = pd.to_datetime(historial['hora'], format="%H:%M:%S").dt.time
+except:
+    historial['hora_dt'] = historial['hora']
+
+# Selección de intervalo de tiempo
+hora_inicio = st.time_input("Hora inicio", value=pd.to_datetime("00:00:00").time())
+hora_fin = st.time_input("Hora fin", value=pd.to_datetime("23:59:59").time())
+
+# Filtrar por hora
+historial_filtrado = historial[
+    historial['hora_dt'].apply(lambda h: hora_inicio <= h <= hora_fin)
+]
+
+# Mostrar tabla
+st.dataframe(historial_filtrado[['hora', 'temperatura', 'vibracion']], use_container_width=True)
+
+# Botón para descargar CSV filtrado
+csv = historial_filtrado[['hora', 'temperatura', 'vibracion']].to_csv(index=False).encode("utf-8")
+st.download_button("📥 Descargar historial filtrado (.csv)", data=csv, file_name="historial_filtrado.csv", mime="text/csv")
