@@ -90,6 +90,7 @@ with col2:
         st.warning("⚠️ Vibración fuera de rango")
 
 # PREDICCIÓN IA + ALERTA
+# PREDICCIÓN IA + ALERTA
 st.subheader("🔍 Evaluación del sistema IA")
 
 if ia_disponible:
@@ -99,19 +100,13 @@ if ia_disponible:
     if pred[0] == -1:
         st.error("🚨 ANOMALÍA DETECTADA")
         mensaje = (
-            f"⚠️ *Anomalía detectada por IA*\n"
-            f"🕒 Hora: {dato['hora']}\n"
-            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\n"
+            f"⚠️ *Anomalía detectada por IA*\\n"
+            f"🕒 Hora: {dato['hora']}\\n"
+            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\\n"
             f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
         )
         if alertas_activadas:
             enviar_alerta_telegram(mensaje)
-            f"⚠️ *Anomalía detectada por IA*\n"
-            f"🕒 Hora: {dato['hora']}\n"
-            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC\n"
-            f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
-        )
-        enviar_alerta_telegram(mensaje)
     else:
         st.success("✅ Todo normal según la IA")
 else:
