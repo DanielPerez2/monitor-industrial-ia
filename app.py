@@ -8,6 +8,8 @@ import joblib
 import requests
 import base64
 import io
+# Detectar si el tema es oscuro
+modo_oscuro = st.get_option("theme.base") == "dark"
 
 # CONFIGURACIÓN GENERAL
 st.set_page_config(page_title="Monitor Industrial IA", layout="wide")
@@ -127,6 +129,10 @@ else:
 
 # GRÁFICO DE TEMPERATURA
 st.subheader("📈 Historial de temperatura")
+if modo_oscuro:
+    plt.style.use("dark_background")
+else:
+    plt.style.use("default")
 fig, ax = plt.subplots(figsize=(10, 4), facecolor='white')
 ax.plot(historial['hora'], historial['temperatura'], marker='o', linewidth=2, markersize=6, color='tab:blue')
 ax.axhline(UMBRAL_TEMPERATURA, color='red', linestyle='--', label='Umbral crítico')
