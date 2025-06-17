@@ -29,7 +29,9 @@ if not st.session_state.login_exitoso:
 def leer_datos():
     temperatura = np.random.normal(loc=50, scale=10)
     vibracion = np.random.rand() > 0.8
-    hora = pd.Timestamp.now().strftime("%H:%M:%S")
+    import pytz
+    hora = pd.Timestamp.now(tz=pytz.timezone("Europe/Madrid")).strftime("%H:%M:%S")
+
     return {"temperatura": temperatura, "vibracion": vibracion, "hora": hora}
 
 def enviar_alerta_telegram(mensaje):
@@ -62,6 +64,14 @@ st.markdown("Visualización de sensores simulados y detección automática de an
 
 # --- LEER DATO ACTUAL ---
 dato = leer_datos()
+# --- MOSTRAR DATOS ACTUALES ---
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("🌡️ Temperatura actual", f"{dato['temperatura']:.2f} ºC")
+with col2:
+    vibracion_texto = "Alta" if dato["vibracion"] else "Normal"
+    st.metric("💥 Vibración", vibracion_texto)
+
 
 # --- ESTADO GENERAL ---
 if ia_disponible:
