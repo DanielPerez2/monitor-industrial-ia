@@ -39,7 +39,7 @@ if not st.session_state.login_exitoso:
 def leer_datos():
     temperatura = np.random.normal(loc=50, scale=10)
     vibracion = np.random.rand() > 0.8
-    hora = pd.Timestamp.now(tz=pytz.timezone("Europe/Madrid").strftime("%H:%M:%S")
+    hora = pd.Timestamp.now().strftime("%H:%M:%S")
     return {"temperatura": temperatura, "vibracion": vibracion, "hora": hora}
 
 def enviar_alerta_telegram(mensaje):
