@@ -124,8 +124,7 @@ st.pyplot(fig)
 st.subheader("🔍 Evaluación del sistema IA")
 if ia_disponible:
     if pred[0] == -1:
-        mensaje = (
-            f"⚠️ *Anomalía detectada por IA*
+        mensaje = f"""⚠️ *Anomalía detectada por IA*
 "
             f"🕒 Hora: {dato['hora']}
 "
