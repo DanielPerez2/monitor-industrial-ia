@@ -125,12 +125,9 @@ st.subheader("🔍 Evaluación del sistema IA")
 if ia_disponible:
     if pred[0] == -1:
         mensaje = f"""⚠️ *Anomalía detectada por IA*
-"
-            f"🕒 Hora: {dato['hora']}
-"
-            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC
-"
-            f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
+🕒 Hora: {dato['hora']}
+🌡️ Temperatura: {dato['temperatura']:.2f} ºC
+💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"""
         )
         if alertas_activadas:
             enviar_alerta_telegram(mensaje)
