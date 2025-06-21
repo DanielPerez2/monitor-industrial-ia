@@ -39,7 +39,7 @@ if not st.session_state.login_exitoso:
 def leer_datos():
     temperatura = np.random.normal(loc=50, scale=10)
     vibracion = np.random.rand() > 0.8
-    hora = pd.Timestamp.now(tz=pytz.timezone("Europe/Madrid")).strftime("%H:%M:%S")
+    hora = pd.Timestamp.now(tz=pytz.timezone("Europe/Madrid").strftime("%H:%M:%S")
     return {"temperatura": temperatura, "vibracion": vibracion, "hora": hora}
 
 def enviar_alerta_telegram(mensaje):
@@ -147,7 +147,7 @@ except:
     historial['hora_dt'] = historial['hora']
 
 # Selección de intervalo de tiempo
-hora_inicio = st.time_input("Hora inicio", value=pd.to_datetime("00:00:00").time())
+hora_inicio = st.time_input("Hora inicio", value=pd.to_datetime("00:00:00").time()
 hora_fin = st.time_input("Hora fin", value=pd.to_datetime("23:59:59").time())
 
 # Filtrar por hora
