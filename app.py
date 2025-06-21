@@ -1,17 +1,25 @@
 
+# ✅ CONFIGURACIÓN DE PÁGINA
 import streamlit as st
+st.set_page_config(page_title="Monitor Industrial IA", layout="wide")
+
+# --- IMPORTS ---
 import pandas as pd
 import numpy as np
 import joblib
 import requests
 import os
 import matplotlib.pyplot as plt
+import pytz
 
-# Configuración de página
-st.set_page_config(page_title="Monitor Industrial IA", layout="wide")
+# --- USUARIOS DISPONIBLES ---
+USUARIOS = {
+    "daniel": {"password": "demo123", "pro": False},
+    "pro_user": {"password": "superpro123", "pro": True}
+}
 
 # --- LOGIN BÁSICO ---
-if 'login_exitoso' not in st.session_state:
+if "login_exitoso" not in st.session_state:
     st.session_state.login_exitoso = False
 
 if not st.session_state.login_exitoso:
@@ -19,8 +27,10 @@ if not st.session_state.login_exitoso:
     user = st.text_input("Usuario")
     password = st.text_input("Contraseña", type="password")
     if st.button("Iniciar sesión"):
-        if user == "daniel" and password == "demo123":
+        if user in USUARIOS and password == USUARIOS[user]["password"]:
             st.session_state.login_exitoso = True
+            st.session_state.usuario = user
+            st.session_state.es_pro = USUARIOS[user]["pro"]
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
     st.stop()
@@ -29,9 +39,7 @@ if not st.session_state.login_exitoso:
 def leer_datos():
     temperatura = np.random.normal(loc=50, scale=10)
     vibracion = np.random.rand() > 0.8
-    import pytz
     hora = pd.Timestamp.now(tz=pytz.timezone("Europe/Madrid")).strftime("%H:%M:%S")
-
     return {"temperatura": temperatura, "vibracion": vibracion, "hora": hora}
 
 def enviar_alerta_telegram(mensaje):
@@ -56,7 +64,8 @@ st.sidebar.title("⚙️ Configuración del sistema")
 UMBRAL_TEMPERATURA = st.sidebar.slider("Umbral de temperatura (°C)", min_value=30, max_value=90, value=50)
 alertas_activadas = st.sidebar.toggle("🔔 Activar alertas por Telegram", value=True)
 st.sidebar.markdown("---")
-st.sidebar.markdown("Versión demo por Daniel Pérez")
+st.sidebar.markdown(f"👤 Usuario: **{st.session_state.get('usuario', '')}**")
+st.sidebar.markdown(f"💼 Plan: {'PRO' if st.session_state.get('es_pro', False) else 'BÁSICO'}")
 
 # --- INICIO APP ---
 st.title("Monitor Industrial IA")
@@ -64,6 +73,7 @@ st.markdown("Visualización de sensores simulados y detección automática de an
 
 # --- LEER DATO ACTUAL ---
 dato = leer_datos()
+
 # --- MOSTRAR DATOS ACTUALES ---
 col1, col2 = st.columns(2)
 with col1:
@@ -71,7 +81,6 @@ with col1:
 with col2:
     vibracion_texto = "Alta" if dato["vibracion"] else "Normal"
     st.metric("💥 Vibración", vibracion_texto)
-
 
 # --- ESTADO GENERAL ---
 if ia_disponible:
@@ -98,7 +107,7 @@ nuevo = pd.DataFrame([dato])
 historial = pd.concat([historial, nuevo], ignore_index=True)
 historial.to_csv(historial_path, index=False)
 
-# --- MOSTRAR GRÁFICO ---
+# --- GRÁFICO ---
 modo_oscuro = st.get_option("theme.base") == "dark"
 plt.style.use("dark_background" if modo_oscuro else "default")
 
@@ -111,39 +120,51 @@ ax.set_ylabel("Temperatura (°C)")
 ax.legend()
 st.pyplot(fig)
 
-
-# --- GUARDAR EN GOOGLE SHEETS ---
-try:
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds_dict = st.secrets["GOOGLE_SHEETS_CREDENTIALS"]
-    import json
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(creds_dict), scope)
-    client = gspread.authorize(creds)
-
-    sheet = client.open("monitor_ia_datos").sheet1
-    sheet.append_row([dato['hora'], dato['temperatura'], str(dato['vibracion'])], value_input_option='USER_ENTERED')
-
-except Exception as e:
-    st.warning(f"No se pudo guardar en Google Sheets: {e}")
+# --- IA + ALERTAS ---
+st.subheader("🔍 Evaluación del sistema IA")
+if ia_disponible:
+    if pred[0] == -1:
+        mensaje = (
+            f"⚠️ *Anomalía detectada por IA*
+"
+            f"🕒 Hora: {dato['hora']}
+"
+            f"🌡️ Temperatura: {dato['temperatura']:.2f} ºC
+"
+            f"💥 Vibración: {'Alta' if dato['vibracion'] else 'Normal'}"
+        )
+        if alertas_activadas:
+            enviar_alerta_telegram(mensaje)
+        st.error("🚨 ANOMALÍA DETECTADA")
+    else:
+        st.success("✅ Todo normal según la IA")
+else:
+    st.info("ℹ️ No se pudo cargar el modelo de IA.")
 
 # --- HISTORIAL FILTRABLE ---
 st.subheader("📂 Historial de registros")
+
+# Convertir 'hora' a datetime si es necesario
 try:
     historial['hora_dt'] = pd.to_datetime(historial['hora'], format="%H:%M:%S").dt.time
 except:
     historial['hora_dt'] = historial['hora']
 
+# Selección de intervalo de tiempo
 hora_inicio = st.time_input("Hora inicio", value=pd.to_datetime("00:00:00").time())
 hora_fin = st.time_input("Hora fin", value=pd.to_datetime("23:59:59").time())
 
+# Filtrar por hora
 historial_filtrado = historial[
     historial['hora_dt'].apply(lambda h: hora_inicio <= h <= hora_fin)
 ]
 
+# Mostrar tabla
 st.dataframe(historial_filtrado[['hora', 'temperatura', 'vibracion']], use_container_width=True)
 
-csv = historial_filtrado[['hora', 'temperatura', 'vibracion']].to_csv(index=False).encode("utf-8")
-st.download_button("📥 Descargar historial filtrado (.csv)", data=csv, file_name="historial_filtrado.csv", mime="text/csv")
+# Descargar CSV solo para PRO
+if st.session_state.get("es_pro", False):
+    csv = historial_filtrado[['hora', 'temperatura', 'vibracion']].to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Descargar historial filtrado (.csv)", data=csv, file_name="historial_filtrado.csv", mime="text/csv")
+else:
+    st.info("🔒 Esta función está disponible solo para usuarios PRO.")
